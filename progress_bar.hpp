@@ -7,35 +7,35 @@
 #include <iomanip>
 #include <ctime>
 
-template <typename T=long>
 class ProgressBar {
 public:
-    ProgressBar(T total, T width, char complete, char incomplete)
+    ProgressBar(int total, int width, char complete, char incomplete)
             : total_ticks {total},
               bar_width {width},
               complete_char {complete},
               incomplete_char {incomplete}
     {}
 
-    ProgressBar(T total, T width)
+    ProgressBar(int total, int width)
             : total_ticks {total},
               bar_width {width}
     {}
 
-    virtual ~ProgressBar() {
-        display(true);
-        stream << std::endl;
+    int operator++() {
+        ++ticks;
+        display();
+        stream << "\r";
+        return ticks;
     }
 
-    T operator++() {
-        ++ticks; display(); return ticks;
+    int update(int amount) {
+        ticks += amount;
+        display();
+        stream << "\r";
+        return ticks;
     }
 
-    T update(T amount) {
-        ticks += amount; display(); return ticks;
-    }
-
-    T get() {
+    int get() {
         return ticks;
     }
 
@@ -50,6 +50,23 @@ public:
     std::chrono::milliseconds eta() {
         return time_elapsed() * (total_ticks - ticks) / ticks;
     }
+    
+    void finish(const std::string& finish)
+    {
+        display(true);
+        if (!finish.empty()) {
+            stream << finish;
+        }
+        stream << std::endl;
+    }
+    
+    void reset(int total)
+    {
+        ticks = 0;
+        total_ticks = total;
+        start_time = std::chrono::steady_clock::now();
+        last_display_time = std::chrono::steady_clock::now();
+    }
 
     void display(bool force_redraw=false)
     {
@@ -61,13 +78,10 @@ public:
         int pos = (int) (bar_width * progress());
 
         stream << "["
-               << std::string(pos, complete_char) << (pos == bar_width ? "" : ">") << std::string(std::max(bar_width - pos - 1, (T)0), incomplete_char)
+               << std::string(pos, complete_char) << (pos == bar_width ? "" : ">") << std::string(std::max(bar_width - pos - 1, 0), incomplete_char)
                << "] "
                << int(progress() * 100.f) << "% "
-               << "["
-               << formatted_duration(time_elapsed()) << "<" << formatted_duration(eta())
-               << "] "
-               << std::flush << "\r";
+               << std::flush;
     }
 
 private:
@@ -89,17 +103,17 @@ private:
     }
 
 private:
-    T ticks = 0;
-
-    const T total_ticks;
-    const T bar_width;
+    int ticks = 0;
+    int total_ticks;
+    std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point last_display_time = std::chrono::steady_clock::now();
+    
+    const int bar_width;
     const char complete_char = '=';
     const char incomplete_char = ' ';
     const std::chrono::milliseconds time_between_draws{500};
-    const std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+    
     std::ostream& stream = std::cout;
-
-    std::chrono::steady_clock::time_point last_display_time = std::chrono::steady_clock::now();
 };
 
 #endif //PROGRESS_BAR_PROGRESS_BAR_HPP
