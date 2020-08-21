@@ -75,12 +75,13 @@ public:
         else
             return;
 
-        int pos = (int) (bar_width * progress());
+        float pg = total_ticks ? progress() : 1.0;
+        int pos = (int) (bar_width * pg);
 
         stream << "["
                << std::string(pos, complete_char) << (pos == bar_width ? "" : ">") << std::string(std::max(bar_width - pos - 1, 0), incomplete_char)
                << "] "
-               << int(progress() * 100.f) << "% "
+               << int(pg * 100.f) << "% "
                << std::flush;
     }
 
