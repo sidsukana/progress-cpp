@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <ctime>
+#include <mutex>
 
 class ProgressBar {
 public:
@@ -22,16 +23,20 @@ public:
     {}
 
     int operator++() {
+        mutex.lock();
         ++ticks;
         display();
         stream << "\r";
+        mutex.unlock();
         return ticks;
     }
 
     int update(int amount) {
+        mutex.lock();
         ticks += amount;
         display();
         stream << "\r";
+        mutex.unlock();
         return ticks;
     }
 
@@ -115,6 +120,8 @@ private:
     const std::chrono::milliseconds time_between_draws{500};
     
     std::ostream& stream = std::cout;
+
+    std::mutex mutex;
 };
 
 #endif //PROGRESS_BAR_PROGRESS_BAR_HPP
